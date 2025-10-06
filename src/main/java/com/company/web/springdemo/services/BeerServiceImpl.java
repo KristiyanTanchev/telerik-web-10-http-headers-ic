@@ -1,8 +1,10 @@
 package com.company.web.springdemo.services;
 
+import com.company.web.springdemo.exceptions.AuthorizationException;
 import com.company.web.springdemo.exceptions.EntityDuplicateException;
 import com.company.web.springdemo.exceptions.EntityNotFoundException;
 import com.company.web.springdemo.models.Beer;
+import com.company.web.springdemo.models.User;
 import com.company.web.springdemo.repositories.BeerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,7 +22,8 @@ public class BeerServiceImpl implements BeerService {
     }
 
     @Override
-    public List<Beer> get(String name, Double minAbv, Double maxAbv, Integer styleId, String sortBy, String sortOrder) {
+    public List<Beer> get(String name, Double minAbv,
+                          Double maxAbv, Integer styleId, String sortBy, String sortOrder) {
         return repository.get(name, minAbv, maxAbv, styleId, sortBy, sortOrder);
     }
 
@@ -30,7 +33,7 @@ public class BeerServiceImpl implements BeerService {
     }
 
     @Override
-    public void create(Beer beer) {
+    public void create(Beer beer, User user) {
         boolean duplicateExists = true;
         try {
             repository.get(beer.getName());
@@ -42,11 +45,14 @@ public class BeerServiceImpl implements BeerService {
             throw new EntityDuplicateException("Beer", "name", beer.getName());
         }
 
-        repository.create(beer);
+        repository.create(beer, user);
     }
 
     @Override
-    public void update(Beer beer) {
+    public void update(Beer beer, User user) {
+        if (!user.isAdmin() && user.getId() != beer.getCreatedBy().getId()){
+            throw new AuthorizationException();
+        }
         boolean duplicateExists = true;
         try {
             Beer existingBeer = repository.get(beer.getName());
@@ -65,7 +71,12 @@ public class BeerServiceImpl implements BeerService {
     }
 
     @Override
-    public void delete(int id) {
+    public void delete(int id, User user) {
+        Beer beer = repository.get(id);
+
+        if (!user.isAdmin() && user.getId() != beer.getCreatedBy().getId()){
+            throw new AuthorizationException();
+        }
         repository.delete(id);
     }
 
