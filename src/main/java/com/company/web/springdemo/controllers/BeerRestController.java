@@ -57,8 +57,9 @@ public class BeerRestController {
     public Beer create(
             @RequestHeader HttpHeaders headers,
             @Valid @RequestBody BeerDto beerDto) {
-        User user = authenticationHelper.tryGetUser(headers);
+
         try {
+            User user = authenticationHelper.tryGetUser(headers);
             Beer beer = beerMapper.fromDto(beerDto);
             service.create(beer, user);
             return beer;
@@ -66,6 +67,8 @@ public class BeerRestController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (EntityDuplicateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        } catch (AuthorizationException e){
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
     }
 
@@ -73,8 +76,8 @@ public class BeerRestController {
     public Beer update(
             @RequestHeader HttpHeaders headers,
             @PathVariable int id, @Valid @RequestBody BeerDto beerDto) {
-        User user = authenticationHelper.tryGetUser(headers);
         try {
+            User user = authenticationHelper.tryGetUser(headers);
             Beer beer = beerMapper.fromDto(id, beerDto);
             service.update(beer, user);
             return beer;
@@ -82,8 +85,7 @@ public class BeerRestController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         } catch (EntityDuplicateException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
-        }
-        catch (AuthorizationException e){
+        } catch (AuthorizationException e){
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
     }
@@ -91,13 +93,12 @@ public class BeerRestController {
     @DeleteMapping("/{id}")
     public void delete(
             @RequestHeader HttpHeaders headers, @PathVariable int id) {
-        User user = authenticationHelper.tryGetUser(headers);
         try {
+            User user = authenticationHelper.tryGetUser(headers);
             service.delete(id, user);
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
-        }
-        catch (AuthorizationException e){
+        } catch (AuthorizationException e){
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         }
     }

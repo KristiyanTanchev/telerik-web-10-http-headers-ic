@@ -1,5 +1,6 @@
 package com.company.web.springdemo.helpers;
 
+import com.company.web.springdemo.exceptions.AuthorizationException;
 import com.company.web.springdemo.exceptions.EntityNotFoundException;
 import com.company.web.springdemo.models.User;
 import com.company.web.springdemo.services.UserService;
@@ -12,8 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Component
 public class AuthenticationHelper {
-    public static final String AUTHORIZATION_USER_NAME = "Username";
-    public static final String AUTHORIZATION_PASSWORD = "Password";
+    public static final String AUTHORIZATION_NAME = "Authorization";
     private final UserService userService;
 
     @Autowired
@@ -22,21 +22,26 @@ public class AuthenticationHelper {
     }
 
     public User tryGetUser(HttpHeaders headers){
-        if (!headers.containsKey(AUTHORIZATION_USER_NAME)){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "The requested resource requires authentication.");
+        if (!headers.containsKey(AUTHORIZATION_NAME)){
+            throw new AuthorizationException();
+        }
+        String authentication = headers.getFirst(AUTHORIZATION_NAME);
+        if (authentication == null){
+            throw new AuthorizationException();
+        }
+        if (authentication.split(",").length < 2){
+            throw new AuthorizationException();
         }
 
         try {
-            User current = userService.get(headers.getFirst(AUTHORIZATION_USER_NAME));
-            if (!current.getPassword().equals(headers.getFirst(AUTHORIZATION_PASSWORD))){
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                        "Wrong password or username.");
+            User current = userService.get(authentication.split(",")[0]);
+
+            if (!current.getPassword().equals(authentication.split(",")[1])){
+                throw new AuthorizationException();
             }
             return current;
         }catch (EntityNotFoundException e){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,
-                    "Invalid username.");
+            throw new AuthorizationException();
         }
     }
 }
